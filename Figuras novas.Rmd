@@ -1,0 +1,313 @@
+---
+title: "Gráficos - lodo qui/fis"
+author: "Jorge Alonso"
+date: "2024-08-09"
+output: github_document
+---
+
+## 1. Preparando para as análises
+
+```{r}
+# Carregando pacotes
+library(tidyverse)
+library(ggpubr)
+library(ExpDes.pt)
+library(ggthemes)
+```
+
+```{r}
+# Limpando a memória
+rm(list=ls(all=TRUE))
+gc()
+```
+
+```{r}
+# Carregando os dados
+raw_url <- "https://raw.githubusercontent.com/jmalonso55/caracteristicas_lodo_figuras/main/Dados_experimento.csv"
+dat <- read.csv(raw_url, sep = ";")
+```
+
+## 2. Gráficos originais
+
+### 2.1. Farinha seca
+
+```{r}
+# Filtrando para a farinha seca
+far <- subset(dat, Esp == "Far")
+```
+
+
+```{r}
+# Filtrando e resumindo para farinha seca
+farm<-setNames(aggregate(far$Alt, by=list(far$Trat, far$Ida), FUN=mean),
+               c("Trat", "Ida", "H"))
+sd<-setNames(aggregate(far$Alt, by=list(far$Trat, far$Ida), FUN=sd),
+             c("Trat", "Ida", "sd"))
+```
+
+
+```{r}
+# Acrescentando novas colunas
+farm$sd<-sd$sd
+tuk<-c("a","bc","ab","c","a","b","b","a","c","a","b","b","a","b","a","b","b","a","b","a")
+farm$tuk<-tuk
+farm<-as.data.frame(farm)
+```
+
+
+```{r}
+# Gerando o gráfico
+farg<-  ggplot(farm, aes(x=Ida, y=H, group=Trat)) + 
+  geom_col(aes(color=factor(Trat), fill=factor(Trat)), position=position_dodge(20), width=17) +
+  theme_bw() + 
+  geom_errorbar(aes(ymin=H-sd, ymax=H+sd), position=position_dodge(20), 
+                width=10, size=0.75, alpha=0.5) +
+    theme(text=element_text(size=14,  family="serif"), 
+          axis.text = element_text(size = 12, family="serif")) +
+  scale_x_continuous(limits = c(20, 130), breaks = c(30, 60, 90, 120)) +
+  scale_y_continuous(limits = c(0, 47.5), breaks = c(5,10,15,20,25,30,35,40,45)) +
+  labs(y="Height (cm)", x="Age (days)") +
+  geom_text(aes(label=tuk, y=H+sd), vjust = -0.5, position=position_dodge(20)) +
+  scale_fill_manual(values=c("#e75151","#fff355","#114c73","#e17d47","#92dc67"), 
+  name = "Substrates:", labels = c("Sphagnum peat", "Pine bark", "Ilha Sludge", 
+                                   "Alegria Sludge", "Sarapu? Sludge"))+
+  scale_color_manual(values=c("#e75151","#fff355","#114c73","#e17d47","#92dc67")) + 
+  guides(color="none", fill=guide_legend(override.aes=list(color=NA)))
+
+# Visualizando
+farg
+```
+
+### 2.2. Sobrasil
+
+```{r}
+# Filtrando e resumindo para o sobrasil
+sob<-subset(dat, Esp=="Sob")
+sobm<-setNames(aggregate(sob$Alt, by=list(sob$Trat, sob$Ida), FUN=mean),
+               c("Trat", "Ida", "H"))
+ssd<-setNames(aggregate(sob$Alt, by=list(sob$Trat, sob$Ida), FUN=sd),
+             c("Trat", "Ida", "sd"))
+```
+
+
+```{r}
+# Adicionando novas colunas
+sobm$sd<-ssd$sd
+tuks<-c("b","c","bc","d","a","b","c","b","d","a","bc","c","ab","d","a","bc","c","ab","c","a")
+sobm$tuks<-tuks
+sobm<-as.data.frame(sobm)
+```
+
+
+```{r}
+# Gerando o gráfico
+sobg<- ggplot(sobm, aes(x=Ida, y=H, group=Trat)) + 
+  geom_col(aes(color=factor(Trat), fill=factor(Trat)), position=position_dodge(20), width=17) +
+  theme_bw() + 
+  geom_errorbar(aes(ymin=H-sd, ymax=H+sd), position=position_dodge(20), 
+                width=10, size=0.75, alpha=0.5) +
+  theme(text=element_text(size=14,  family="serif"), 
+        axis.text = element_text(size = 12, family="serif")) +
+  scale_x_continuous(limits = c(50, 160), breaks = c(60, 90, 120, 150)) +
+  scale_y_continuous(limits = c(0, 47.5), breaks = c(5,10,15,20,25,30,35,40,45)) +
+  labs(y="Height (cm)", x="Age (days)") +
+  geom_text(aes(label=tuks, y=H+sd), vjust = -0.5, position=position_dodge(20)) +
+  scale_fill_manual(values=c("#e75151","#fff355","#114c73","#e17d47","#92dc67"), 
+                    name = "Substrates:", labels = c("Sphagnum peat", "Pine bark", "Ilha Sludge", 
+                                                     "Alegria Sludge", "Sarapu? Sludge"))+
+  scale_color_manual(values=c("#e75151","#fff355","#114c73","#e17d47","#92dc67")) + 
+  guides(color="none", fill=guide_legend(override.aes=list(color=NA)))
+
+# Visualizando o gráfico
+sobg
+```
+
+
+```{r}
+# Juntando os gráficos
+ggarrange(farg, sobg, labels = c("a", "b"), nrow = 1, ncol = 2, common.legend = TRUE, legend = "bottom")
+```
+
+## 3. Reanalisando os dados
+
+### 3.1. Farinha seca
+
+```{r}
+# Recodificando os dados
+far$Idade <- as.factor(far$Idade)
+far$Trat <- as.factor(far$Trat)
+far$Rep <- as.factor(far$Rep)
+```
+
+```{r}
+# Verificando o resumo
+summary(far)
+```
+
+#### 3.1.1. Checando os pressupostos
+
+```{r}
+# Gerando um modelo para os pressupostos
+mod_far <- aov(log(Alt) ~ Idade*Trat, data = far)
+```
+
+```{r}
+# Normalidade
+shapiro.test(mod_far$residuals)
+```
+
+```{r}
+# Homocedasticidade
+with(far, bartlett.test(log(Alt), interaction(Idade, Trat)))
+```
+
+```{r}
+# Resumo dos resultados
+summary(mod_far)
+```
+
+#### 3.1.2. Análise por parcelas subdivididas
+
+```{r}
+# Efetuando a análise
+with(far, psub2.dic(Trat, as.numeric(Idade), Rep, log(Alt), quali = c(T, F), mcomp = "sk"))
+```
+
+## 4. Gerando os gráficos
+
+```{r}
+# Criando uma tabela de correspondência
+tab_corres <- tibble::tibble(
+  Trat = c("1", "2", "3", "4", "5"),
+  "30" = c("a", "c", "b", "d", "a"),
+  "60" = c("b", "b", "a", "c", "a"),
+  "90" = c("b", "b", "a", "b", "a"),
+  "120" = c("d", "c", "a", "b", "a")
+)
+
+# Realizando o join para adicionar a coluna teste_f
+far <- far %>%
+  left_join(tab_corres, by = "Trat") %>%
+  mutate(teste_sk = case_when(
+    Idade == "30" ~ `30`,
+    Idade == "60" ~ `60`,
+    Idade == "90" ~ `90`,
+    Idade == "120" ~ `120`,
+    TRUE ~ NA_character_
+  )) %>%
+  select(-"30", -"60", -"90", -"120")
+
+```
+
+### 4.1. Gráfico para o artigo
+
+```{r}
+# Gráfico para o artigo
+ggplot(data = far, aes(x = Trat, y = Alt, color = teste_sk)) +
+  geom_jitter(alpha = 0.4, width = 0.1, height = 0.1, size = 2) +
+  stat_summary(fun = mean, geom = "text", aes(label = sprintf("%.1f", after_stat(y))), position = position_nudge(x = 0.4), family = "serif", fontface = "bold", size = 3) +
+  scale_x_discrete(labels = c("Sphagnum peat", "Pine bark", "Ilha Sludge", "Alegria Sludge", "Sarapuí Sludge")) +
+  scale_color_colorblind() + 
+  coord_flip() +
+  facet_wrap(~Idade, labeller = labeller(Idade = c("30" = "30 days after sowing", "60" = "60 days after sowing", "90" = "90 days after sowing", "120" = "120 days after sowing"))) +
+  labs(x = "Substrates", y = "Shoot height (cm)") +
+  theme_classic() +
+  theme(legend.position = "none",
+      text = element_text(family = "serif", size = 10), 
+      axis.text = element_text(size = 10, family="serif"),
+      panel.background = element_rect(fill = "grey97"), 
+      panel.grid.major.y = element_line(color = "grey85", linetype = "dashed"),
+      panel.spacing.x = unit(0.6, "cm"),
+      strip.text = element_text(size = 10, margin = margin(b = 5)),
+      strip.background = element_blank())
+```
+
+
+Com esse gráfico é possível visualizar toda o conjunto de dados gerados no experimento, visto que cada um dos pontos do geom_jitter corresponde a uma das observações. A média é representada pelo seu valor, assim é possível observar tendência central e dispersão dos dados. Não há legenda no gráfico, além de outros elementos que foram retirados. Ao invés de letras, cores são utilizadas para identificar tratamentos com médias diferentes pelo teste de Scott-Knott (p < 0.05). As cores utilizadas são identificáveis por pessoas com discromatopsia.
+
+
+### 4.2. Alternativa usando boxplot
+
+```{r, fig.width=9, fig.height=7}
+# Boxplot como alternativa ao jitter
+ggplot(data = far, aes(x = Trat, y = Alt, color = teste_sk)) +
+  geom_boxplot(width = 0.4) +
+  stat_summary(fun = mean, geom = "text", aes(label = sprintf("%.1f", after_stat(y))), position = position_nudge(x = 0.45), family = "serif", fontface = "bold", size = 3) +
+  stat_summary(fun = mean, geom = "point", size = 2.5) +
+  scale_x_discrete(labels = c("Sphagnum peat", "Pine bark", "Ilha Sludge", "Alegria Sludge", "Sarapuí Sludge")) +
+  scale_color_colorblind() + 
+  coord_flip() +
+  facet_wrap(~Idade, scales = "free_x", labeller = labeller(Idade = c("30" = "30 days after sowing", "60" = "60 days after sowing", "90" = "90 days after sowing", "120" = "120 days after sowing"))) +
+  labs(x = "Substrates", y = "Shoot height (cm)") +
+  theme_classic() +
+  theme(legend.position = "none",
+      text = element_text(family = "serif", size = 10), 
+      axis.text = element_text(size = 10, family="serif"),
+      panel.background = element_rect(fill = "grey97"), 
+      panel.grid.major.y = element_line(color = "grey85", linetype = "dashed"),
+      panel.spacing.x = unit(0.6, "cm"),
+      strip.text = element_text(size = 10, margin = margin(b = 5)),
+      strip.background = element_blank())
+```
+
+
+Em trabalhos científicos, alguns pesquisadores preferem utilizar boxplot. A representação gráfica dos quartis permitem ter ideia da tendência cetral, dispersão dos dados, assimetria e por fim identificar valores discrepantes. Para contrastar com o gráfico anterior e permitir melhor interpretação da altura dentro de cada idade, os valores do eixo x mudam de painel para painel e não começam no zero. Manipular os eixos dessa forma pode assentuar diferenças entre tratamentos. No entanto, o resultado do teste de comparações múltiplas, ilustrado pelas cores, respalda a manipulação do eixo, já que ele é uma evidência confiável da diferença entre as médias.
+
+
+### 4.3. Alternativa com grid
+
+```{r, fig.width=11, fig.height=7}
+# Gráfico com grid
+ggplot(data = far, aes(x = Trat, y = Alt, color = teste_sk)) +
+  geom_jitter(alpha = 0.4, width = 0.1, height = 0.1, size = 2) +
+  stat_summary(fun = mean, geom = "text", aes(label = sprintf("%.1f", after_stat(y))), position = position_nudge(x = 0.4), family = "serif", fontface = "bold", size = 3) +
+  stat_summary(fun = mean, geom = "point", size = 2.5) +
+  scale_x_discrete(labels = c("SP", "PB", "IS", "AS", "SS")) +
+  scale_color_colorblind() + 
+  facet_grid(~Idade, labeller = labeller(Idade = c("30" = "30 days after sowing", "60" = "60 days after sowing", "90" = "90 days after sowing", "120" = "120 days after sowing"))) +
+  labs(x = "Substrates", y = "Shoot height (cm)") +
+  theme_classic() +
+  theme(legend.position = "none",
+      text = element_text(family = "serif", size = 10), 
+      axis.text = element_text(size = 10, family="serif"),
+      panel.background = element_rect(fill = "grey97"), 
+      panel.grid.major.x = element_line(color = "grey85", linetype = "dotted"),
+      panel.grid.major.y = element_line(color = "grey85", linetype = "dotted"),
+      panel.spacing.x = unit(0.6, "cm"),
+      strip.text = element_text(size = 10, margin = margin(b = 5)),
+      strip.background = element_blank())
+```
+
+
+Uma terceira alternativa é o uso de facet_grid ao invés de facet_wrap. Essa opção confere uma melhor noção do crescimento das mudas de uma época para a outra.
+
+### 4.4. Gráfico para uma apresentação
+
+```{r, fig.width=9, fig.height=6}
+# Gráfico para apresentação
+ggplot(data = far, aes(x = Trat, y = Alt, color = teste_sk)) +
+  geom_jitter(alpha = 0.4, width = 0.1, height = 0.1, size = 2) +
+  stat_summary(fun = mean, geom = "text", aes(label = sprintf("%.1f", after_stat(y))), position = position_nudge(x = 0.4), family = "serif", fontface = "bold", size = 3.5) +
+  stat_summary(fun = mean, geom = "point", size = 2.5) +
+  scale_x_discrete(labels = c("Turfa de Sphagnum", "Casca de Pinus", "Lodo da Ilha", "Lodo de Alegria", "Lodo de Sarapuí")) +
+  scale_color_colorblind() + 
+  coord_flip() +
+  facet_wrap(~Idade, labeller = labeller(Idade = c("30" = "30 dias após a semeadura", "60" = "60 dias após a semeadura", "90" = "90 dias após a semeadura", "120" = "120 dias após a semeadura"))) +
+  labs(x = "Substratos", y = "Altura (cm)", title = "Crescimento em altura das mudas de farinha seca em diferentes substratos", subtitle = "Ao final da produção das mudas, a utilização de lodos das estações de tratamento de esgoto \n da Ilha do Governador e Sarapuí resultou em mudas com maior altura") +
+  theme_classic() +
+  theme(legend.position = "none",
+      text = element_text(family = "serif", size = 11), 
+      axis.text = element_text(size = 11, family="serif"),
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+      plot.subtitle = element_text(hjust = 0.5, face = "italic", size = 13, margin = margin(b = 15)),
+      plot.background = element_rect(fill = "#F2FFF3"),
+      panel.background = element_rect(fill = "grey97"), 
+      panel.grid.major.y = element_line(color = "grey85", linetype = "dashed"),
+      panel.spacing.x = unit(0.6, "cm"),
+      strip.text = element_text(size = 12, margin = margin(b = 5)),
+      strip.background = element_blank(),
+      plot.margin = margin(t = 10, b = 10, l = 5, r = 50))
+```
+
+
+Por fim, esse gráfico seria a escolha para uma apresentação de aula ou dos resultados em congresso, por exemplo. Além do fundo colorido, o título e subtítulo fornecem ao observador informações para entender o gráfico e os resultados.
